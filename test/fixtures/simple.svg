@@ -3,4 +3,6 @@
 transform="translate(20 20)" />
 <circle cx="50" cy="50" r="20" fill="tomato"
 transform="translate(-10, -5) rotate(45, 10, 10)" />
+<circle cx="50" cy="50" r="20" fill="transparent" stroke="black"
+transform="rotate(45, 10, 10) translate(-10, -5)" />
 </svg>
