@@ -6,16 +6,25 @@ import {matches} from 'hast-util-select'
 import {Root} from 'hast'
 import path from 'path';
 import fs from 'fs';
+import sharp from 'sharp'
+import pixelmatch from 'pixelmatch'
 
 const outDir = path.join(__dirname, 'out')
 fs.mkdirSync(outDir, {recursive: true})
 
-const testFile = (fileName: string) => test(path.join('fixtures', fileName), t => {
-  t.plan(1)
-  const input = hastParser({type: 'root', children: [{type: 'raw', value: fs.readFileSync(path.join(__dirname, 'fixtures', fileName), 'utf-8')}]})
+const testFile = (fileName: string) => test(path.join('fixtures', fileName), async t => {
+  t.plan(2)
+  const srcImagePath = path.join(__dirname, 'fixtures', fileName)
+  const input = hastParser({type: 'root', children: [{type: 'raw', value: fs.readFileSync(srcImagePath, 'utf-8')}]})
   flatten(input as Root);
-  fs.writeFileSync(path.join(outDir, fileName), toHTML(input, {space: 'svg'}))
-  t.false(matches('circle[transform]', input, 'svg'))
+  // Test if all tranform attributes are removed
+  t.notOk(matches('circle[transform]', input, 'svg'), 'output svg has no transform attribute on circle elements')
+
+  const destImagePath = path.join(outDir, fileName)
+  fs.writeFileSync(destImagePath, toHTML(input, {space: 'svg'}))
+  const destRaw = sharp(destImagePath).raw().toBuffer()
+  const {data: srcRaw, info: {width, height}} = await sharp(srcImagePath).raw().toBuffer({resolveWithObject: true})
+  t.equal(pixelmatch(srcRaw, await destRaw, null, width, height), 0, 'Output and input images are equivalent')
 })
 
 testFile('simple.svg')
