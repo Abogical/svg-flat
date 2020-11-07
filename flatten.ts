@@ -1,8 +1,5 @@
 import { selectAll } from 'hast-util-select'
 import { Root } from 'hast';
-import { stringify } from 'querystring';
-import { serialize } from 'v8';
-import { X_OK } from 'constants';
 
 const zeroIfUndefined = (val?: string): number => val === undefined? 0 : Number(val);
 
@@ -77,7 +74,7 @@ export default function flatten(svg: Root) {
   })
 
   flattenElements('path', ({d}) => {
-    let absIndices: Array<number> = []
+    let absIndices: Set<number> = new Set()
     // Relative commands in the start of a path are considered absolute
     let initPath = true;
     const cmds = [...d.matchAll(/[\s,]*([MZLHVCSQTA])(([\s,]*[+-]?[\d\.e]+)*)/gi)].map(
@@ -85,12 +82,19 @@ export default function flatten(svg: Root) {
         if(cmd == 'Z' || cmd == 'z'){
           initPath = true
         }else if(initPath || cmd == cmd.toUpperCase()){
-          absIndices.push(ind)
+          absIndices.add(ind)
           initPath = false
+        }
+        let numArgs: number[]
+        if(cmd.toUpperCase() === 'A'){
+          const res = args.match(/(\d*\.?\d+([e][-+]?\d+)?)[\s,]*(\d*\.?\d+([e][-+]?\d+)?)[\s,]*([+-]?\d*\.?\d+([e][-+]?\d+)?)[\s,]+([01])[\s,]*([01])[\s,]*([+-]?\d*\.?\d+([e][-+]?\d+)?)[\s,]*([+-]?\d*\.?\d+([e][-+]?\d+)?)/i) as string[]
+          numArgs = [res[1], res[3], res[5], res[7], res[8], res[9], res[11]].map(Number)
+        }else{
+          numArgs = [...args.matchAll(/[\s,]*([-+]?\d*\.?\d+([e][-+]?\d+)?)/gi)].map(([str]) => Number(str))
         }
         return ({
           cmd,
-          args: [...args.matchAll(/[\s,]*([-+]?[0-9]*\.?[0-9]+([e][-+]?[0-9]+)?)/gi)].map(([str]) => Number(str))
+          args: numArgs
         })
       }
     )
@@ -98,29 +102,98 @@ export default function flatten(svg: Root) {
   }, ({cmds, absIndices}, x, y) => {
     for(const ind of absIndices){
       const {cmd, args} = cmds[ind]
-      if(cmd == 'A'){
-        args[5] += x
-        args[6] += y
-      }else{
-        for(let i = 0; i < args.length;){
-          args[i++] += x
-          args[i++] += y
-        }
+      switch(cmd){
+        case 'H':
+          for(let i = 0; i < args.length; i++) args[i] += x
+          break
+        case 'V':
+          for(let i = 0; i < args.length; i++) args[i] += y
+          break
+        case 'A':
+          args[5] += x
+          args[6] += y
+          break
+        default:
+          for(let i = 0; i < args.length;){
+            args[i++] += x
+            args[i++] += y
+          }
       }
     }
-  }, ({cmds}, rotator) => {
-    for(const {cmd, args} of cmds){
-      if(cmd == 'A'){
-        const res = rotator(args[5], args[6])
-        args[5] = res.x
-        args[6] = res.y
-      }else{
-        for(let i = 0; i < args.length;){
-          const res = rotator(args[i], args[i+1])
-          args[i++] = res.x
-          args[i++] = res.y
-        }
+  }, ({cmds, absIndices}, rotator) => {
+    let cursorPt = {x: 0, y: 0}
+    let firstPt: {x: number, y: number} | null = null
+    for(const [ind, cmd] of cmds.entries()){
+      // Update cursor point for H & V commands
+      const setFirstPt = () => {
+        if(firstPt === null) firstPt = {...cursorPt}
       }
+      switch(cmd.cmd.toUpperCase()){
+        case 'Z':
+          if(firstPt !== null) {
+            cursorPt = firstPt
+            firstPt = null
+          }
+          break
+        default:
+          const cmdX = cmd.args[cmd.args.length-2], cmdY = cmd.args[cmd.args.length-1]
+          if(cmd.cmd === cmd.cmd.toUpperCase()){
+            cursorPt.x = cmdX
+            cursorPt.y = cmdY
+          }else{
+            cursorPt.x += cmdX
+            cursorPt.y += cmdY
+          }
+          setFirstPt()
+        case 'H':
+        case 'V':
+      }
+      const flattenHV = (getXY: (arg: number) => [number, number]) => {
+        cmd.cmd = 'l'
+        cmd.args = cmd.args.flatMap(arg => {
+          const res = rotator(...getXY(arg))
+          return [res.x, res.y]
+        })
+      }
+      switch(cmd.cmd){
+        case 'H':
+          const lastX = cmd.args[cmd.args.length-1]
+          flattenHV((arg) => [arg-cursorPt.x, 0])
+          cursorPt.x = lastX
+          setFirstPt()
+          absIndices.delete(ind)
+          break
+        case 'h':
+          cursorPt.x += cmd.args[cmd.args.length-1]
+          flattenHV((arg) => [arg, 0])
+          setFirstPt()
+          break
+        case 'V':
+          const lastY = cmd.args[cmd.args.length-1]
+          flattenHV((arg) => [0, arg-cursorPt.y])
+          cursorPt.y = lastY
+          setFirstPt()
+          absIndices.delete(ind)
+          break
+        case 'v':
+          cursorPt.y += cmd.args[cmd.args.length-1]
+          flattenHV((arg) => [0, arg])
+          setFirstPt()
+          break
+        case 'A':
+        case 'a':
+          const res = rotator(cmd.args[5], cmd.args[6])
+          cmd.args[5] = res.x
+          cmd.args[6] = res.y
+          break
+        default:
+          for(let i = 0; i < cmd.args.length;){
+            const res = rotator(cmd.args[i], cmd.args[i+1])
+            cmd.args[i++] = res.x
+            cmd.args[i++] = res.y
+          }
+      }
+      console.dir(cursorPt)
     }
   }, (ctx, properties) => {
     properties.d = ctx.cmds.map(({cmd, args}) => `${cmd} ${args.join()}`).join(' ')
