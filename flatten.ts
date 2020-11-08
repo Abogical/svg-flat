@@ -58,6 +58,34 @@ export default function flatten(svg: Root) {
     }
   }
   
+  for (const elem of selectAll('rect[transform]', svg, 'svg') as [{tagName: string, properties: {[key: string]: string}}]){
+    elem.tagName = 'path'
+    const width = zeroIfUndefined(elem.properties.width)
+    const height = zeroIfUndefined(elem.properties.height)
+    const rxStr = elem.properties.rx
+    const ryStr = elem.properties.ry
+    let rx = 0, ry = 0
+    if(rxStr === undefined){
+      if(ryStr !== undefined){
+        ry = Number(ryStr)
+        rx = ry
+      }
+    }else{
+      rx = Number(rxStr)
+      ry = ryStr === undefined? rx : Number(ryStr)
+    }
+    console.log(rx, ry)
+    const curve = (x: number, y: number) => (rx || ry)? `a${rx},${ry},0,0,1,${x},${y}`: ''
+    elem.properties.d = `M${zeroIfUndefined(elem.properties.x)+rx},${zeroIfUndefined(elem.properties.y)}h${width-2*rx}${curve(rx,ry)}v${height-2*ry}${curve(-rx,ry)}h${2*rx-width}${curve(-rx,-ry)}${(rx || ry) ? `v${2*ry-height}`: ''}${curve(rx, -ry)}z`
+    console.log(elem.properties.d)
+    delete elem.properties.x
+    delete elem.properties.y
+    delete elem.properties.width
+    delete elem.properties.height
+    delete elem.properties.rx
+    delete elem.properties.ry
+  }
+
   flattenElements('circle', ({cx, cy}) => ({
     x: zeroIfUndefined(cx),
     y: zeroIfUndefined(cy)
@@ -90,7 +118,7 @@ export default function flatten(svg: Root) {
           const res = args.match(/(\d*\.?\d+([e][-+]?\d+)?)[\s,]*(\d*\.?\d+([e][-+]?\d+)?)[\s,]*([+-]?\d*\.?\d+([e][-+]?\d+)?)[\s,]+([01])[\s,]*([01])[\s,]*([+-]?\d*\.?\d+([e][-+]?\d+)?)[\s,]*([+-]?\d*\.?\d+([e][-+]?\d+)?)/i) as string[]
           numArgs = [res[1], res[3], res[5], res[7], res[8], res[9], res[11]].map(Number)
         }else{
-          numArgs = [...args.matchAll(/[\s,]*([-+]?\d*\.?\d+([e][-+]?\d+)?)/gi)].map(([str]) => Number(str))
+          numArgs = [...args.matchAll(/[\s,]*([-+]?\d*\.?\d+([e][-+]?\d+)?)/gi)].map(([_, str]) => Number(str))
         }
         return ({
           cmd,
@@ -193,7 +221,6 @@ export default function flatten(svg: Root) {
             cmd.args[i++] = res.y
           }
       }
-      console.dir(cursorPt)
     }
   }, (ctx, properties) => {
     properties.d = ctx.cmds.map(({cmd, args}) => `${cmd} ${args.join()}`).join(' ')

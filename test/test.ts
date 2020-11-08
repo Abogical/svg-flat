@@ -13,13 +13,14 @@ const outDir = path.join(__dirname, 'out')
 fs.mkdirSync(outDir, {recursive: true})
 
 const testFile = (fileName: string) => test(path.join('fixtures', fileName), async t => {
-  t.plan(3)
+  t.plan(4)
   const srcImagePath = path.join(__dirname, 'fixtures', fileName)
   const input = hastParser({type: 'root', children: [{type: 'raw', value: fs.readFileSync(srcImagePath, 'utf-8')}]})
   flatten(input as Root);
   // Test if all tranform attributes are removed
   t.notOk(matches('circle[transform]', input, 'svg'), 'output svg has no transform attribute on circle elements')
   t.notOk(matches('path[transform]', input, 'svg'), 'output svg has no transform attribute on path elements')
+  t.notOk(matches('rect[transform]', input, 'svg'), 'output svg has no transform attribute on rect elements')  
 
   const destImagePath = path.join(outDir, fileName)
   fs.writeFileSync(destImagePath, toHTML(input, {space: 'svg'}))
