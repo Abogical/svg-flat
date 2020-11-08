@@ -113,19 +113,16 @@ export default function flatten(svg: Root) {
 			ry = ryString === undefined ? rx : Number(ryString);
 		}
 
-		console.log(rx, ry);
 		const curve = (x: number, y: number) =>
 			rx || ry ? `a${rx},${ry},0,0,1,${x},${y}` : '';
 		element.properties.d = `M${
 			zeroIfUndefined(element.properties.x) + rx
-		},${zeroIfUndefined(element.properties.y)}h${(width - 2) * rx}${curve(
+		},${zeroIfUndefined(element.properties.y)}h${width - 2 * rx}${curve(
 			rx,
 			ry
-		)}v${(height - 2) * ry}${curve(-rx, ry)}h${2 * rx - width}${curve(
-			-rx,
-			-ry
-		)}${rx || ry ? `v${2 * ry - height}` : ''}${curve(rx, -ry)}z`;
-		console.log(element.properties.d);
+		)}v${height - 2 * ry}${curve(-rx, ry)}h${2 * rx - width}${curve(-rx, -ry)}${
+			rx || ry ? `v${2 * ry - height}` : ''
+		}${curve(rx, -ry)}z`;
 		delete element.properties.x;
 		delete element.properties.y;
 		delete element.properties.width;
@@ -140,16 +137,16 @@ export default function flatten(svg: Root) {
 			x: zeroIfUndefined(cx),
 			y: zeroIfUndefined(cy)
 		}),
-		translateFn: (ctx, x, y) => {
+		translateFn(ctx, x, y) {
 			ctx.x += x;
 			ctx.y += y;
 		},
-		rotateFn: (ctx, rotator) => {
+		rotateFn(ctx, rotator) {
 			const result = rotator(ctx.x, ctx.y);
 			ctx.x = result.x;
 			ctx.y = result.y;
 		},
-		serialize: (ctx, properties) => {
+		serialize(ctx, properties) {
 			if (ctx.x === 0) {
 				delete properties.cx;
 			} else {
@@ -210,7 +207,7 @@ export default function flatten(svg: Root) {
 			});
 			return {cmds, absIndices};
 		},
-		translateFn: ({cmds, absIndices}, x, y) => {
+		translateFn({cmds, absIndices}, x, y) {
 			for (const ind of absIndices) {
 				const {cmd, args} = cmds[ind];
 				switch (cmd) {
