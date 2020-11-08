@@ -19,7 +19,8 @@ export default function flatten(svg: Root) {
 		translateFn: (ctx: T, x: number, y: number) => void;
 		rotateFn: (
 			ctx: T,
-			rotator: (x: number, y: number) => {x: number; y: number}
+			rotator: (x: number, y: number) => {x: number; y: number},
+			angle: number
 		) => void;
 		serialize: (ctx: T, properties: propertiesType) => void;
 	}) => {
@@ -57,11 +58,12 @@ export default function flatten(svg: Root) {
 							throw new Error(`Invalid rotate arguments: ${args}`);
 						}
 
-						const angleNumber = (Number(rotateArgs[1]) * Math.PI) / 180;
+						const angleDegrees = Number(rotateArgs[1]);
+						const angleRad = (angleDegrees * Math.PI) / 180;
 						let rotateX: string | number | undefined = rotateArgs[3];
 
-						const s = Math.sin(angleNumber);
-						const c = Math.cos(angleNumber);
+						const s = Math.sin(angleRad);
+						const c = Math.cos(angleRad);
 
 						const rotator = (x: number, y: number) => ({
 							x: x * c - y * s,
@@ -69,13 +71,13 @@ export default function flatten(svg: Root) {
 						});
 
 						if (rotateX === undefined) {
-							rotateFn(ctx, rotator);
+							rotateFn(ctx, rotator, angleDegrees);
 						} else {
 							rotateX = Number(rotateX);
 							const rotateY = Number(rotateArgs[4]);
 
 							translateFn(ctx, -rotateX, -rotateY);
-							rotateFn(ctx, rotator);
+							rotateFn(ctx, rotator, angleDegrees);
 							translateFn(ctx, rotateX, rotateY);
 						}
 
@@ -235,7 +237,7 @@ export default function flatten(svg: Root) {
 				}
 			}
 		},
-		rotateFn({cmds, absIndices}, rotator) {
+		rotateFn({cmds, absIndices}, rotator, angle) {
 			let cursorPt = {x: 0, y: 0};
 			let firstPt: {x: number; y: number} | null = null;
 
@@ -319,6 +321,7 @@ export default function flatten(svg: Root) {
 					case 'A':
 					case 'a': {
 						const result = rotator(cmd.args[5], cmd.args[6]);
+						cmd.args[2] += angle;
 						cmd.args[5] = result.x;
 						cmd.args[6] = result.y;
 						break;
