@@ -5,7 +5,9 @@
   "private": true,
   "main": "task.ts",
   "scripts": {
-    "test": "ts-node node_modules/tape/bin/tape ./test/test.ts"
+    "test": "ts-node node_modules/tape/bin/tape ./test/test.ts",
+    "lint": "xo",
+    "lintFix": "xo --fix"
   },
   "author": "Daniele P. <daniele.polencic@gmail.com>",
   "contributors": [
@@ -28,6 +30,7 @@
     "@types/tape": "^4.13.0",
     "pixelmatch": "^5.2.1",
     "sharp": "^0.26.2",
-    "tape": "^5.0.1"
+    "tape": "^5.0.1",
+    "xo": "^0.34.2"
   }
 }
