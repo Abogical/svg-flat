@@ -1,6 +1,5 @@
 import {selectAll} from 'hast-util-select';
 import {Root} from 'hast';
-import {Node} from 'unist';
 
 const zeroIfUndefined = (value?: string): number =>
 	value === undefined ? 0 : Number(value);
@@ -122,6 +121,15 @@ export default function flatten(svg: Root) {
 
 	for (const group of selectAll('g[transform]', svg, 'svg'))
 		flattenGroup(group);
+
+	for (const {tagName} of selectAll(
+		':not(g,rect,circle,path)[transform]',
+		svg,
+		'svg'
+	))
+		console.warn(
+			`flattening tag ${tagName as string} transform attribute is unsupported`
+		);
 
 	for (const element of selectAll('rect[transform]', svg, 'svg') as [
 		{tagName: string; properties: Record<string, string>}
