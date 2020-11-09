@@ -171,23 +171,21 @@ export default function flatten(svg: Root) {
 		deserialize({d}) {
 			const absIndices: Set<number> = new Set();
 			// Relative commands in the start of a path are considered absolute
-			let initPath = true;
 			const cmds = [
 				...d.matchAll(/[\s,]*([mzlhvcsqta])(([\s,]*[+-]?[\d.e]+)*)/gi)
 			].map(([_a, cmd, args], ind) => {
-				if (cmd === 'Z' || cmd === 'z') {
-					initPath = true;
-				} else if (initPath || cmd === cmd.toUpperCase()) {
+				if (ind === 0 || cmd === cmd.toUpperCase()) {
 					absIndices.add(ind);
-					initPath = false;
 				}
 
-				let numberArgs: number[];
-				if (cmd.toUpperCase() === 'A') {
-					const result = /(\d*\.?\d+(e[-+]?\d+)?)[\s,]*(\d*\.?\d+(e[-+]?\d+)?)[\s,]*([+-]?\d*\.?\d+(e[-+]?\d+)?)[\s,]+([01])[\s,]*([01])[\s,]*([+-]?\d*\.?\d+(e[-+]?\d+)?)[\s,]*([+-]?\d*\.?\d+(e[-+]?\d+)?)/i.exec(
-						args
-					) as string[];
-					numberArgs = [
+				const numberArgs =
+					cmd.toUpperCase() === 'A'
+						? [
+								...args.matchAll(
+									/(\d*\.?\d+(e[-+]?\d+)?)[\s,]*(\d*\.?\d+(e[-+]?\d+)?)[\s,]*([+-]?\d*\.?\d+(e[-+]?\d+)?)[\s,]+([01])[\s,]*([01])[\s,]*([+-]?\d*\.?\d+(e[-+]?\d+)?)[\s,]*([+-]?\d*\.?\d+(e[-+]?\d+)?)/gi
+								)
+						  ]
+								.flatMap((result) => [
 						result[1],
 						result[3],
 						result[5],
@@ -195,12 +193,11 @@ export default function flatten(svg: Root) {
 						result[8],
 						result[9],
 						result[11]
-					].map((arg) => Number(arg));
-				} else {
-					numberArgs = [
+								])
+								.map((arg) => Number(arg))
+						: [
 						...args.matchAll(/[\s,]*([-+]?\d*\.?\d+(e[-+]?\d+)?)/gi)
 					].map(([_, string]) => Number(string));
-				}
 
 				return {
 					cmd,
@@ -297,7 +294,10 @@ export default function flatten(svg: Root) {
 					}
 
 					case 'h': {
-						cursorPt.x += cmd.args[cmd.args.length - 1];
+						for (const arg of cmd.args) {
+							cursorPt.x += arg;
+						}
+
 						flattenHV((arg) => [arg, 0]);
 						setFirstPt();
 						break;
@@ -314,7 +314,10 @@ export default function flatten(svg: Root) {
 					}
 
 					case 'v':
-						cursorPt.y += cmd.args[cmd.args.length - 1];
+						for (const arg of cmd.args) {
+							cursorPt.y += arg;
+						}
+
 						flattenHV((arg) => [0, arg]);
 						setFirstPt();
 						break;
