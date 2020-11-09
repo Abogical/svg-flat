@@ -9,9 +9,9 @@
     "lint": "xo",
     "lintFix": "xo --fix"
   },
-  "author": "Daniele P. <daniele.polencic@gmail.com>",
+  "author": "Abdelrahman Abdelrahman <abogical@gmail.com>",
   "contributors": [
-    "Abdelrahman Abdelrahman <abogical@gmail.com>"
+    "Daniele P. <daniele.polencic@gmail.com>"
   ],
   "license": "UNLICENSED",
   "dependencies": {
