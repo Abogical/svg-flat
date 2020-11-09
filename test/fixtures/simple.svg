@@ -3,6 +3,7 @@
 transform="translate(20 20)" />
 <circle cx="50" cy="50" r="20" fill="tomato"
 transform="translate(-10, -5) rotate(45, 10, 10)" />
+<g transform="translate(-10,20) rotate(-30)">
 <circle cx="50" cy="50" r="20" fill="transparent" stroke="black"
 transform="rotate(45, 10, 10) translate(-10, -5)" />
 <path fill="teal" transform="rotate(70)" d="M40 -80 H16 V7 z"></path>
@@ -14,10 +15,12 @@ transform="rotate(45, 10, 10) translate(-10, -5)" />
 5.967-.063-8.95-.078-3.877-.019-7.752-.021-11.628-.13-2.221-.062-4.596.027-
 6.735-.662-2.778-.896-4.41-2.972-6.245-5.104-3.364-3.907-5.36-6.347-3.178-
 11.416" fill="#FE9F90"></path>
-<path transform="translate(-75.338688, 13.000000) rotate(-37.5)" fill="#D2D2D2" d="M186 5v19a5 5 0 01-5 5H5a5
+<path transform="translate(-75.338688, 13.000000) rotate(-37.5)" fill="#D2D2D2" d="M186 5v19 21a5 5 0 01-5 5H5a5
 5 0 01-5-5V5a5 5 0 015-5h176a5 5 0 015 5z"></path>
 <rect fill="coral" x="60" width="20" height="30" transform="rotate(45) translate(0, -50)"></rect>
 <rect fill="coral" x="60" rx="5" width="20" height="30" transform="rotate(-45) translate(0, -50)"></rect>
 <rect stroke="brown" fill="transparent" x="60" ry="10" width="20" height="30" transform="translate(-20, -50) rotate(30)"></rect>
 <rect stroke="dodgerblue" fill="transparent" x="60" rx="5" ry="10" width="20" height="30" transform="translate(-20, -10) rotate(180)"></rect>
+</g>
+<path transform="translate(-800, -200)" xmlns="http://www.w3.org/2000/svg" d="M798.169 181.393a5.406 5.406 0 014.872 5.892 5.406 5.406 0 11-10.765-1.013 5.408 5.408 0 015.893-4.88zm-4.101 43.579a5.413 5.413 0 014.88 5.893c-.285 2.973-2.923 5.16-5.892 4.88a5.407 5.407 0 01-4.873-5.893 5.406 5.406 0 015.885-4.88zm-4.093 43.581a5.412 5.412 0 014.873 5.892 5.41 5.41 0 01-5.893 4.88 5.413 5.413 0 01-4.873-5.893 5.408 5.408 0 015.893-4.88z" fill="yellowgreen" mask="url(#mask-2)"/>
 </svg>

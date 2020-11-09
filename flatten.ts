@@ -1,10 +1,35 @@
 import {selectAll} from 'hast-util-select';
 import {Root} from 'hast';
+import {Node} from 'unist';
 
 const zeroIfUndefined = (value?: string): number =>
 	value === undefined ? 0 : Number(value);
 
 type propertiesType = Record<string, string>;
+
+type groupType = {
+	type: string;
+	tagName: string;
+	properties: {transform?: string};
+	children: groupType[];
+};
+
+const flattenGroup = ({properties, children}: groupType) => {
+	const transform = properties.transform;
+	if (transform !== undefined) {
+		for (const child of children.filter(
+			(child) => child.properties !== undefined
+		)) {
+			child.properties.transform = `${transform} ${
+				child.properties.transform ?? ''
+			}`;
+			if (child.tagName === 'g' || child.tagName === 'mask')
+				flattenGroup(child);
+		}
+
+		delete properties.transform;
+	}
+};
 
 export default function flatten(svg: Root) {
 	const flattenElements = <T>({
@@ -95,6 +120,9 @@ export default function flatten(svg: Root) {
 		}
 	};
 
+	for (const group of selectAll('g[transform]', svg, 'svg'))
+		flattenGroup(group);
+
 	for (const element of selectAll('rect[transform]', svg, 'svg') as [
 		{tagName: string; properties: Record<string, string>}
 	]) {
@@ -167,7 +195,7 @@ export default function flatten(svg: Root) {
 		cmds: Array<{cmd: string; args: number[]}>;
 		absIndices: Set<number>;
 	}>({
-		tag: 'path',
+		tag: 'path[d]',
 		deserialize({d}) {
 			const absIndices: Set<number> = new Set();
 			// Relative commands in the start of a path are considered absolute
@@ -186,18 +214,18 @@ export default function flatten(svg: Root) {
 								)
 						  ]
 								.flatMap((result) => [
-						result[1],
-						result[3],
-						result[5],
-						result[7],
-						result[8],
-						result[9],
-						result[11]
+									result[1],
+									result[3],
+									result[5],
+									result[7],
+									result[8],
+									result[9],
+									result[11]
 								])
 								.map((arg) => Number(arg))
 						: [
-						...args.matchAll(/[\s,]*([-+]?\d*\.?\d+(e[-+]?\d+)?)/gi)
-					].map(([_, string]) => Number(string));
+								...args.matchAll(/[\s,]*([-+]?\d*\.?\d+(e[-+]?\d+)?)/gi)
+						  ].map(([_, string]) => Number(string));
 
 				return {
 					cmd,
