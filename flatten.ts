@@ -352,31 +352,24 @@ function zeroIfUndefined(value?: unknown): number {
 function flattenGroup(
 	element: Hast.Element | Hast.Comment | Hast.Text | Hast.Raw
 ): void {
-	switch (element.type) {
-		case 'element': {
-			if (!isString(element.properties.transform)) {
-				return;
-			}
-
-			const transform = element.properties.transform;
-
-			for (const child of element.children.filter(
-				(child) => child.properties !== undefined
-			) as Hast.Element[]) {
-				child.properties.transform = `${transform} ${
-					child.properties.transform ?? ''
-				}`;
-				if (child.tagName === 'g' || child.tagName === 'mask')
-					flattenGroup(child);
-			}
-
-			delete element.properties.transform;
+	if (element.type === 'element') {
+		if (!isString(element.properties.transform)) {
+			return;
 		}
 
-		case 'comment':
-		case 'raw':
-		case 'text':
-		default:
+		const transform = element.properties.transform;
+
+		for (const child of element.children.filter(
+			(child) => child.properties !== undefined
+		) as Hast.Element[] & Array<{properties: {transform?: string}}>) {
+			child.properties.transform = `${transform} ${
+				child.properties.transform ?? ''
+			}`;
+			if (child.tagName === 'g' || child.tagName === 'mask')
+				flattenGroup(child);
+		}
+
+		delete element.properties.transform;
 	}
 }
 
