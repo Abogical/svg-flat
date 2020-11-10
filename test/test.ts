@@ -1,5 +1,5 @@
 import test from 'tape';
-import flatten from '../flatten';
+import {flatten} from '../flatten';
 import hastParser from 'hast-util-raw';
 import toHTML from 'hast-util-to-html';
 import {select} from 'hast-util-select';
