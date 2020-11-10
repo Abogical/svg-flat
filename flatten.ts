@@ -20,6 +20,14 @@ export function flatten(svg: Hast.Root) {
 		rectToPath(rect);
 	}
 
+	for (const ellipse of selectAll<Hast.Element>(
+		'ellipse[transform]',
+		svg,
+		'svg'
+	)) {
+		ellipseToPath(ellipse);
+	}
+
 	for (const circle of selectAll<Hast.Element>(
 		'circle[transform]',
 		svg,
@@ -379,17 +387,7 @@ function rectToPath(element: Hast.Element): void {
 	const height = zeroIfUndefined(element.properties.height);
 	const rxString = element.properties.rx;
 	const ryString = element.properties.ry;
-	let rx = 0;
-	let ry = 0;
-	if (rxString === undefined) {
-		if (ryString !== undefined) {
-			ry = Number(ryString);
-			rx = ry;
-		}
-	} else {
-		rx = Number(rxString);
-		ry = ryString === undefined ? rx : Number(ryString);
-	}
+	const {rx, ry} = getRXY(element);
 
 	const curve = (x: number, y: number) =>
 		rx || ry ? `a${rx},${ry},0,0,1,${x},${y}` : '';
@@ -407,6 +405,38 @@ function rectToPath(element: Hast.Element): void {
 	delete element.properties.height;
 	delete element.properties.rx;
 	delete element.properties.ry;
+}
+
+function ellipseToPath(element: Hast.Element): void {
+	element.tagName = 'path';
+	const {rx, ry} = getRXY(element);
+	element.properties.d = `M${
+		zeroIfUndefined(element.properties.cx) + rx
+	},${zeroIfUndefined(element.properties.cy)}a${rx},${ry},0,1,1,${
+		-2 * rx
+	},0a${rx},${ry},0,1,1,${2 * rx},0z`;
+	delete element.properties.cx;
+	delete element.properties.cy;
+	delete element.properties.rx;
+	delete element.properties.ry;
+}
+
+function getRXY({properties}: Hast.Element): {rx: number; ry: number} {
+	const rxString = properties.rx;
+	const ryString = properties.ry;
+	let rx = 0;
+	let ry = 0;
+	if (rxString === undefined) {
+		if (ryString !== undefined) {
+			ry = Number(ryString);
+			rx = ry;
+		}
+	} else {
+		rx = Number(rxString);
+		ry = ryString === undefined ? rx : Number(ryString);
+	}
+
+	return {rx, ry};
 }
 
 function isString(test: unknown): test is string {
