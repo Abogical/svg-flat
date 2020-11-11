@@ -1,5 +1,6 @@
-import {selectAll} from 'hast-util-select';
+import {select, selectAll} from 'hast-util-select';
 import * as Hast from 'hast';
+import parents, {NestedNode, NestedParent} from 'unist-util-parents';
 
 export function flatten(svg: Hast.Root) {
 	for (const {tagName} of selectAll<Hast.Element>(
@@ -26,6 +27,35 @@ export function flatten(svg: Hast.Root) {
 		'svg'
 	)) {
 		ellipseToPath(ellipse);
+	}
+
+	for (const use of selectAll<Hast.Element>(
+		'use[transform][href],use[transform][xLinkHref]',
+		svg,
+		'svg'
+	)) {
+		const hrefMatch = /#(\S+)/g.exec(
+			(use.properties.href ?? use.properties.xLinkHref) as string
+		);
+		if (hrefMatch !== null) {
+			const usedElement = select<
+				NestedNode & Hast.Element & {parent: NestedParent}
+			>(`[id~=${hrefMatch[1]}]`, parents(svg), 'svg');
+			if (usedElement !== null) {
+				use.tagName = usedElement.tagName;
+				for (const [key, value] of Object.entries(usedElement.properties)) {
+					use.properties[key] = `${use.properties[key] as string} ${
+						value as string
+					}`;
+				}
+
+				// Delete used element
+				usedElement.parent.node.children.splice(
+					usedElement.parent.children.indexOf(usedElement),
+					1
+				);
+			}
+		}
 	}
 
 	for (const circle of selectAll<Hast.Element>(

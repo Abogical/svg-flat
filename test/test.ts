@@ -14,7 +14,7 @@ fs.mkdirSync(outDir, {recursive: true});
 
 const testFile = (fileName: string) =>
 	test(path.join('fixtures', fileName), async (t) => {
-		t.plan(6);
+		t.plan(7);
 		const srcImagePath = path.join(__dirname, 'fixtures', fileName);
 		const input = hastParser({
 			type: 'root',
@@ -43,6 +43,10 @@ const testFile = (fileName: string) =>
 		t.notOk(
 			select('g[transform]', input, 'svg'),
 			'output svg has no transform attribute on g elements'
+		);
+		t.notOk(
+			select('use[transform]', input, 'svg'),
+			'output svg has no transform attribute on use elements'
 		);
 
 		const destImagePath = path.join(outDir, fileName);
