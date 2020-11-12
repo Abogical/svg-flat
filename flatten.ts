@@ -4,7 +4,7 @@ import parents, {NestedNode, NestedParent} from 'unist-util-parents';
 
 export function flatten(svg: Hast.Root) {
 	for (const {tagName} of selectAll<Hast.Element>(
-		':not(g,rect,circle,path)[transform]',
+		':not(g,rect,circle,path,ellipse,use)[transform]',
 		svg,
 		'svg'
 	)) {
