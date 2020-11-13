@@ -415,8 +415,6 @@ function rectToPath(element: Hast.Element): void {
 	element.tagName = 'path';
 	const width = zeroIfUndefined(element.properties.width);
 	const height = zeroIfUndefined(element.properties.height);
-	const rxString = element.properties.rx;
-	const ryString = element.properties.ry;
 	const {rx, ry} = getRXY(element);
 
 	const curve = (x: number, y: number) =>
