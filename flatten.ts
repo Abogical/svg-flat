@@ -1,6 +1,5 @@
 import {select, selectAll} from 'hast-util-select';
 import * as Hast from 'hast';
-import parents, {NestedNode, NestedParent} from 'unist-util-parents';
 
 export function flatten(svg: Hast.Root) {
 	for (const {tagName} of selectAll<Hast.Element>(
@@ -38,9 +37,11 @@ export function flatten(svg: Hast.Root) {
 			(use.properties.href ?? use.properties.xLinkHref) as string
 		);
 		if (hrefMatch !== null) {
-			const usedElement = select<
-				NestedNode & Hast.Element & {parent: NestedParent}
-			>(`[id~=${hrefMatch[1]}]`, parents(svg), 'svg');
+			const usedElement = select<Hast.Element>(
+				`[id~=${hrefMatch[1]}]`,
+				svg,
+				'svg'
+			);
 			if (usedElement !== null) {
 				use.tagName = usedElement.tagName;
 				for (const [key, value] of Object.entries(usedElement.properties)) {
@@ -48,15 +49,12 @@ export function flatten(svg: Hast.Root) {
 						value as string
 					}`;
 				}
+			}
 
-				// Delete used element
-				usedElement.parent.node.children.splice(
-					usedElement.parent.children.indexOf(usedElement),
-					1
-				);
+			delete use.properties.xLinkHref;
+			delete use.properties.href;
 			}
 		}
-	}
 
 	for (const circle of selectAll<Hast.Element>(
 		'circle[transform]',
