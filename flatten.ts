@@ -53,8 +53,8 @@ export function flatten(svg: Hast.Root) {
 
 			delete use.properties.xLinkHref;
 			delete use.properties.href;
-			}
 		}
+	}
 
 	for (const circle of selectAll<Hast.Element>(
 		'circle[transform]',
@@ -303,6 +303,47 @@ function flattenPath(element: Hast.Element): void {
 					translateFn(-rotateX, -rotateY);
 					rotateFn();
 					translateFn(rotateX, rotateY);
+				}
+
+				break;
+			}
+
+			case 'scale': {
+				const scaleArgs = /^ *([+-]?[\d.e]*) *,? *([+-]?[\d.e]*)? *$/i.exec(
+					args
+				);
+				if (scaleArgs === null) {
+					throw new Error(`Invalid translate arguments: ${args}`);
+				}
+
+				const x = Number(scaleArgs[1]);
+				const yString = scaleArgs[2];
+				const y = yString === undefined ? x : Number(yString);
+
+				for (const {cmd, args} of cmds) {
+					switch (cmd.toUpperCase()) {
+						case 'H':
+							for (let i = 0; i < args.length; i++) {
+								args[i] *= x;
+							}
+
+							break;
+						case 'V':
+							for (let i = 0; i < args.length; i++) {
+								args[i] *= y;
+							}
+
+							break;
+						case 'A':
+							args[5] *= x;
+							args[6] *= y;
+							break;
+						default:
+							for (let i = 0; i < args.length; ) {
+								args[i++] *= x;
+								args[i++] *= y;
+							}
+					}
 				}
 
 				break;

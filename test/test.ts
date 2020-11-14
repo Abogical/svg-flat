@@ -67,3 +67,5 @@ testFile('simple.svg');
 testFile('chaos-engineering-kubernetes.svg');
 testFile('kube-proxy.svg');
 testFile('kube-proxy-forward.svg');
+testFile('ingress-11.svg');
+testFile('stateful.svg');
