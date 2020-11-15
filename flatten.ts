@@ -359,7 +359,7 @@ function flattenPath(element: Hast.Element): void {
 			}
 
 			case 'matrix': {
-				const matrixArgs = /^ *([+-]?[\d.e]*) *,? *([+-]?[\d.e]*)? *,? *([+-]?[\d.e]*)? *,? *([+-]?[\d.e]*)? *,? *([+-]?[\d.e]*)? *,? *([+-]?[\d.e]*)? *$/i.exec(
+				const matrixArgs = /^ *([+-]?[\d.e]*) *,? *([+-]?[\d.e]*) *,? *([+-]?[\d.e]*) *,? *([+-]?[\d.e]*) *,? *([+-]?[\d.e]*) *,? *([+-]?[\d.e]*) *$/i.exec(
 					args
 				);
 				if (matrixArgs === null) {
