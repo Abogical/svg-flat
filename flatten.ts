@@ -378,7 +378,6 @@ function flattenPath(element: Hast.Element): void {
 				if (sin !== 0) {
 					// Preform rotate function.
 					const cos = Math.sqrt(1 - sin * sin);
-					console.log(sin, cos);
 					rotateFn(rotatorGen(sin, cos), (Math.asin(sin) * 180) / Math.PI);
 					A /= cos;
 					D /= cos;
