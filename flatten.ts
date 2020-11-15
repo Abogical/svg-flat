@@ -148,6 +148,148 @@ function flattenPath(element: Hast.Element): void {
 		}
 	};
 
+	const rotateFn = (
+		rotator: (x: number, y: number) => {x: number; y: number},
+		angleDegrees: number
+	) => {
+		let cursorPt = {x: 0, y: 0};
+		let firstPt: {x: number; y: number} | null = null;
+
+		const setFirstPt = () => {
+			if (firstPt === null) {
+				firstPt = {...cursorPt};
+			}
+		};
+
+		for (const [ind, cmd] of cmds.entries()) {
+			// Update cursor point for H & V commands
+
+			switch (cmd.cmd.toUpperCase()) {
+				case 'Z':
+					if (firstPt !== null) {
+						cursorPt = firstPt;
+						firstPt = null;
+					}
+
+					break;
+				default: {
+					const cmdX = cmd.args[cmd.args.length - 2];
+					const cmdY = cmd.args[cmd.args.length - 1];
+					if (cmd.cmd === cmd.cmd.toUpperCase()) {
+						cursorPt.x = cmdX;
+						cursorPt.y = cmdY;
+					} else {
+						cursorPt.x += cmdX;
+						cursorPt.y += cmdY;
+					}
+
+					setFirstPt();
+					break;
+				}
+
+				case 'H':
+				case 'V':
+			}
+
+			const flattenHV = (getXY: (arg: number) => [number, number]) => {
+				cmd.cmd = 'l';
+				cmd.args = cmd.args.flatMap((arg) => {
+					const result = rotator(...getXY(arg));
+					return [result.x, result.y];
+				});
+			};
+
+			switch (cmd.cmd) {
+				case 'H': {
+					const lastX = cmd.args[cmd.args.length - 1];
+					const cursorX = cursorPt.x;
+					flattenHV((arg) => [arg - cursorX, 0]);
+					cursorPt.x = lastX;
+					setFirstPt();
+					absIndices.delete(ind);
+					break;
+				}
+
+				case 'h': {
+					for (const arg of cmd.args) {
+						cursorPt.x += arg;
+					}
+
+					flattenHV((arg) => [arg, 0]);
+					setFirstPt();
+					break;
+				}
+
+				case 'V': {
+					const lastY = cmd.args[cmd.args.length - 1];
+					const cursorY = cursorPt.y;
+					flattenHV((arg) => [0, arg - cursorY]);
+					cursorPt.y = lastY;
+					setFirstPt();
+					absIndices.delete(ind);
+					break;
+				}
+
+				case 'v':
+					for (const arg of cmd.args) {
+						cursorPt.y += arg;
+					}
+
+					flattenHV((arg) => [0, arg]);
+					setFirstPt();
+					break;
+				case 'A':
+				case 'a': {
+					const result = rotator(cmd.args[5], cmd.args[6]);
+					cmd.args[2] += angleDegrees;
+					cmd.args[5] = result.x;
+					cmd.args[6] = result.y;
+					break;
+				}
+
+				default:
+					for (let i = 0; i < cmd.args.length; ) {
+						const result = rotator(cmd.args[i], cmd.args[i + 1]);
+						cmd.args[i++] = result.x;
+						cmd.args[i++] = result.y;
+					}
+			}
+		}
+	};
+
+	const rotatorGen = (s: number, c: number) => (x: number, y: number) => ({
+		x: x * c - y * s,
+		y: x * s + y * c
+	});
+
+	const scaleFn = (x: number, y: number) => {
+		for (const {cmd, args} of cmds) {
+			switch (cmd.toUpperCase()) {
+				case 'H':
+					for (let i = 0; i < args.length; i++) {
+						args[i] *= x;
+					}
+
+					break;
+				case 'V':
+					for (let i = 0; i < args.length; i++) {
+						args[i] *= y;
+					}
+
+					break;
+				case 'A':
+					args[5] *= x;
+					args[6] *= y;
+					break;
+				default:
+					for (let i = 0; i < args.length; ) {
+						args[i++] *= x;
+						args[i++] *= y;
+					}
+			}
+		}
+	};
+
 	for (const [_, func, args] of Array.from(
 		transformAttribute.matchAll(/ *([a-z]+) *\(([^)]*)\) */g)
 	).reverse()) {
@@ -183,125 +325,16 @@ function flattenPath(element: Hast.Element): void {
 				const s = Math.sin(angleRad);
 				const c = Math.cos(angleRad);
 
-				const rotator = (x: number, y: number) => ({
-					x: x * c - y * s,
-					y: x * s + y * c
-				});
-
-				const rotateFn = () => {
-					let cursorPt = {x: 0, y: 0};
-					let firstPt: {x: number; y: number} | null = null;
-
-					const setFirstPt = () => {
-						if (firstPt === null) {
-							firstPt = {...cursorPt};
-						}
-					};
-
-					for (const [ind, cmd] of cmds.entries()) {
-						// Update cursor point for H & V commands
-
-						switch (cmd.cmd.toUpperCase()) {
-							case 'Z':
-								if (firstPt !== null) {
-									cursorPt = firstPt;
-									firstPt = null;
-								}
-
-								break;
-							default: {
-								const cmdX = cmd.args[cmd.args.length - 2];
-								const cmdY = cmd.args[cmd.args.length - 1];
-								if (cmd.cmd === cmd.cmd.toUpperCase()) {
-									cursorPt.x = cmdX;
-									cursorPt.y = cmdY;
-								} else {
-									cursorPt.x += cmdX;
-									cursorPt.y += cmdY;
-								}
-
-								setFirstPt();
-								break;
-							}
-
-							case 'H':
-							case 'V':
-						}
-
-						const flattenHV = (getXY: (arg: number) => [number, number]) => {
-							cmd.cmd = 'l';
-							cmd.args = cmd.args.flatMap((arg) => {
-								const result = rotator(...getXY(arg));
-								return [result.x, result.y];
-							});
-						};
-
-						switch (cmd.cmd) {
-							case 'H': {
-								const lastX = cmd.args[cmd.args.length - 1];
-								const cursorX = cursorPt.x;
-								flattenHV((arg) => [arg - cursorX, 0]);
-								cursorPt.x = lastX;
-								setFirstPt();
-								absIndices.delete(ind);
-								break;
-							}
-
-							case 'h': {
-								for (const arg of cmd.args) {
-									cursorPt.x += arg;
-								}
-
-								flattenHV((arg) => [arg, 0]);
-								setFirstPt();
-								break;
-							}
-
-							case 'V': {
-								const lastY = cmd.args[cmd.args.length - 1];
-								const cursorY = cursorPt.y;
-								flattenHV((arg) => [0, arg - cursorY]);
-								cursorPt.y = lastY;
-								setFirstPt();
-								absIndices.delete(ind);
-								break;
-							}
-
-							case 'v':
-								for (const arg of cmd.args) {
-									cursorPt.y += arg;
-								}
-
-								flattenHV((arg) => [0, arg]);
-								setFirstPt();
-								break;
-							case 'A':
-							case 'a': {
-								const result = rotator(cmd.args[5], cmd.args[6]);
-								cmd.args[2] += angleDegrees;
-								cmd.args[5] = result.x;
-								cmd.args[6] = result.y;
-								break;
-							}
-
-							default:
-								for (let i = 0; i < cmd.args.length; ) {
-									const result = rotator(cmd.args[i], cmd.args[i + 1]);
-									cmd.args[i++] = result.x;
-									cmd.args[i++] = result.y;
-								}
-						}
-					}
-				};
+				const rotator = rotatorGen(s, c);
 
 				if (rotateX === undefined) {
-					rotateFn();
+					rotateFn(rotator, angleDegrees);
 				} else {
 					rotateX = Number(rotateX);
 					const rotateY = Number(rotateArgs[4]);
 
 					translateFn(-rotateX, -rotateY);
-					rotateFn();
+					rotateFn(rotator, angleDegrees);
 					translateFn(rotateX, rotateY);
 				}
 
@@ -320,31 +353,44 @@ function flattenPath(element: Hast.Element): void {
 				const yString = scaleArgs[2];
 				const y = yString === undefined ? x : Number(yString);
 
-				for (const {cmd, args} of cmds) {
-					switch (cmd.toUpperCase()) {
-						case 'H':
-							for (let i = 0; i < args.length; i++) {
-								args[i] *= x;
-							}
+				scaleFn(x, y);
 
-							break;
-						case 'V':
-							for (let i = 0; i < args.length; i++) {
-								args[i] *= y;
-							}
+				break;
+			}
 
-							break;
-						case 'A':
-							args[5] *= x;
-							args[6] *= y;
-							break;
-						default:
-							for (let i = 0; i < args.length; ) {
-								args[i++] *= x;
-								args[i++] *= y;
-							}
-					}
+			case 'matrix': {
+				const matrixArgs = /^ *([+-]?[\d.e]*) *,? *([+-]?[\d.e]*)? *,? *([+-]?[\d.e]*)? *,? *([+-]?[\d.e]*)? *,? *([+-]?[\d.e]*)? *,? *([+-]?[\d.e]*)? *$/i.exec(
+					args
+				);
+				if (matrixArgs === null) {
+					throw new Error(`Invalid matrix arguments: ${args}`);
 				}
+
+				let [A, B, C, D, E, F] = matrixArgs.slice(1).map((arg) => Number(arg));
+
+				// Test if there is a skew transform.
+				if ((B !== 0 || C !== 0) && D !== (-A * B) / C) {
+					throw new Error('Skew matrix transformations are unsupported');
+				}
+
+				const C2 = C * C;
+				const sin = Math.sqrt(C2 / (A * A + C2));
+				if (sin !== 0) {
+					// Preform rotate function.
+					const cos = Math.sqrt(1 - sin * sin);
+					console.log(sin, cos);
+					rotateFn(rotatorGen(sin, cos), (Math.asin(sin) * 180) / Math.PI);
+					A /= cos;
+					D /= cos;
+				}
+
+				if (A !== 0 || D !== 0)
+					// Preform scale function.
+					scaleFn(A, D);
+
+				if (E !== 0 || F !== 0)
+					// Preform translate function.
+					translateFn(E, F);
 
 				break;
 			}
