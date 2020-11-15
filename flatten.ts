@@ -313,7 +313,7 @@ function flattenPath(element: Hast.Element): void {
 					args
 				);
 				if (scaleArgs === null) {
-					throw new Error(`Invalid translate arguments: ${args}`);
+					throw new Error(`Invalid scale arguments: ${args}`);
 				}
 
 				const x = Number(scaleArgs[1]);
