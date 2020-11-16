@@ -374,7 +374,8 @@ function flattenPath(element: Hast.Element): void {
 				}
 
 				const C2 = C * C;
-				const sin = Math.sqrt(C2 / (A * A + C2));
+				let sin = Math.sqrt(C2 / (A * A + C2));
+				if (C > 0) sin = -sin;
 				if (sin !== 0) {
 					// Preform rotate function.
 					const cos = Math.sqrt(1 - sin * sin);
@@ -383,7 +384,7 @@ function flattenPath(element: Hast.Element): void {
 					D /= cos;
 				}
 
-				if (A !== 0 || D !== 0)
+				if (A !== 1 || D !== 1)
 					// Preform scale function.
 					scaleFn(A, D);
 
