@@ -373,13 +373,12 @@ function flattenPath(element: Hast.Element): void {
 					throw new Error('Skew matrix transformations are unsupported');
 				}
 
-				const C2 = C * C;
-				let sin = Math.sqrt(C2 / (A * A + C2));
-				if (C > 0) sin = -sin;
-				if (sin !== 0) {
+				const angleRad = Math.atan2(-C, A);
+				if (angleRad !== 0) {
 					// Preform rotate function.
-					const cos = Math.sqrt(1 - sin * sin);
-					rotateFn(rotatorGen(sin, cos), (Math.asin(sin) * 180) / Math.PI);
+					const sin = Math.sin(angleRad);
+					const cos = Math.cos(angleRad);
+					rotateFn(rotatorGen(sin, cos), (angleRad * 180) / Math.PI);
 					A /= cos;
 					D /= cos;
 				}
